@@ -11,17 +11,21 @@ async function main() {
   log.info('Starting abays-bot...');
 
   try {
-    log.info('Connecting to Minecraft server...');
-    await botManager.connect();
-    log.info('Bot connected successfully');
+    log.info('Starting API server...');
+    await startApiServer();
 
     log.info('Starting queue processor...');
     initializeProcessor();
 
-    log.info('Starting API server...');
-    await startApiServer();
+    log.info('Connecting to Minecraft server...');
+    botManager.connect().then(() => {
+      log.info('Bot connected successfully');
+    }).catch((err) => {
+      log.error(`Bot connection failed: ${err.message}`);
+      log.info('Bot will retry connection in 5 minutes...');
+    });
 
-    log.info('Bot is ready and running!');
+    log.info('API server is ready. Bot connection in progress...');
 
     const shutdown = async (signal: string) => {
       log.info(`Received ${signal}, shutting down gracefully...`);
