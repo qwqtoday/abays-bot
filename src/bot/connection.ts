@@ -1,5 +1,4 @@
 import mineflayer from 'mineflayer';
-import pathfinder from 'mineflayer-pathfinder';
 import { config } from '../config/index.js';
 import { createLogger } from '../utils/logger.js';
 import { EventEmitter } from 'events';
@@ -8,9 +7,7 @@ const log = createLogger('bot:connection');
 
 const RECONNECT_DELAY_MS = 5 * 60 * 1000; // 5 minutes
 
-export type Bot = mineflayer.Bot & {
-  pathfinder: pathfinder.Pathfinder;
-};
+export type Bot = mineflayer.Bot;
 
 export interface BotEvents {
   connected: () => void;
@@ -40,12 +37,9 @@ export class BotManager extends EventEmitter {
         host: config.mc.host,
         username: config.mc.username,
         auth: config.mc.auth,
-        
       };
 
       const bot = mineflayer.createBot(botOptions) as Bot;
-
-      bot.loadPlugin(pathfinder.pathfinder);
 
       bot.on('login', () => {
         log.info(`Logged in as ${bot.username}`);

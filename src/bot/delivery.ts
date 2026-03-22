@@ -1,5 +1,5 @@
 import { executeHome, executeTpa, executeKill, CommandError } from './commands.js';
-import { navigateToPosition, grabFirstItemFromChest, dropAllItems, ChestError } from './chest.js';
+import { grabFirstItemFromChest, ChestError } from './chest.js';
 import { db } from '../db/index.js';
 import { kits, orders, type Kit, type Order, type OrderStatus } from '../db/schema.js';
 import { eq } from 'drizzle-orm';
@@ -51,9 +51,6 @@ export class DeliveryService {
 
       await executeHome(kit.homeName);
       log.info('Teleported to home location');
-
-      await navigateToPosition(kit.chestX, kit.chestY, kit.chestZ);
-      log.info('Navigated to chest');
 
       const item = await grabFirstItemFromChest(kit.chestX, kit.chestY, kit.chestZ);
       if (!item) {

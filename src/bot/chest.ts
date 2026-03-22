@@ -1,9 +1,6 @@
 import { botManager, Bot } from './connection.js';
 import { createLogger } from '../utils/logger.js';
 import { Vec3 } from 'vec3';
-import pathfinder from 'mineflayer-pathfinder';
-
-const { goals } = pathfinder;
 
 const log = createLogger('bot:chest');
 
@@ -26,31 +23,6 @@ function getBot(): Bot {
     throw new ChestError('Bot is not connected');
   }
   return bot;
-}
-
-export async function navigateToPosition(x: number, y: number, z: number): Promise<void> {
-  const bot = getBot();
-  log.info(`Navigating to (${x}, ${y}, ${z})`);
-
-  const goal = new goals.GoalBlock(Math.floor(x), Math.floor(y), Math.floor(z));
-
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      bot.pathfinder.stop();
-      reject(new ChestError('Navigation timeout'));
-    }, 30000);
-
-    bot.pathfinder.goto(goal, (err) => {
-      clearTimeout(timeout);
-      if (err) {
-        log.error(`Navigation failed: ${err.message}`);
-        reject(new ChestError(`Failed to navigate: ${err.message}`));
-      } else {
-        log.info('Navigation complete');
-        resolve();
-      }
-    });
-  });
 }
 
 export async function openChestAt(x: number, y: number, z: number): Promise<ChestItem[]> {

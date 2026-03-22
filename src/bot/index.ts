@@ -6,5 +6,5 @@ export { botManager } from './connection.js';
 export { deliveryService } from './delivery.js';
 export { eventManager } from './events.js';
 export { executeHome, executeTpa, executeKill, CommandError } from './commands.js';
-export { grabFirstItemFromChest, navigateToPosition, ChestError } from './chest.js';
+export { grabFirstItemFromChest, ChestError } from './chest.js';
 export type { Bot } from './connection.js';
