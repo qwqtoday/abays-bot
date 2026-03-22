@@ -50,26 +50,57 @@ export async function executeTpa(playerName: string): Promise<void> {
   const bot = getBot();
   log.info(`Executing /tpa ${playerName}`);
 
-  const startPos = bot.entity.position.clone();
-  bot.chat(`/tpa ${playerName}`);
+  return new Promise((resolve, reject) => {
+    const startPos = bot.entity.position.clone();
+    let teleportDetected = false;
 
-  const tpaTimeout = config.queue.tpaTimeoutMs;
-  log.info(`Waiting ${tpaTimeout / 1000}s for TPA acceptance...`);
+    const timeout = setTimeout(() => {
+      bot.off('chat', chatHandler);
+      if (!teleportDetected) {
+        const endPos = bot.entity.position;
+        const distance = Math.sqrt(
+          Math.pow(endPos.x - startPos.x, 2) +
+          Math.pow(endPos.y - startPos.y, 2) +
+          Math.pow(endPos.z - startPos.z, 2)
+        );
 
-  await sleep(tpaTimeout);
+        if (distance > 10) {
+          log.info(`TPA teleport detected via position (distance: ${distance.toFixed(1)})`);
+          resolve();
+        } else {
+          reject(new CommandError(`TPA to ${playerName} timed out`));
+        }
+      }
+    }, config.queue.tpaTimeoutMs);
 
-  const endPos = bot.entity.position;
-  const distance = Math.sqrt(
-    Math.pow(endPos.x - startPos.x, 2) +
-    Math.pow(endPos.y - startPos.y, 2) +
-    Math.pow(endPos.z - startPos.z, 2)
-  );
+    const chatHandler = (username: string, message: string) => {
+      if (teleportDetected) return;
+      
+      const msg = message.toString().toLowerCase();
+      
+      if (msg.includes('teleporting')) {
+        teleportDetected = true;
+        clearTimeout(timeout);
+        bot.off('chat', chatHandler);
+        log.info(`TPA accepted by ${playerName}`);
+        resolve();
+      }
 
-  if (distance > 10) {
-    log.info(`TPA accepted by ${playerName} (distance: ${distance.toFixed(1)})`);
-  } else {
-    log.info(`TPA request sent to ${playerName}, assuming accepted`);
-  }
+      if (
+        msg.includes('not found') ||
+        msg.includes('offline') ||
+        msg.includes('denied') ||
+        msg.includes('expired')
+      ) {
+        clearTimeout(timeout);
+        bot.off('chat', chatHandler);
+        reject(new CommandError(`TPA to ${playerName} failed: ${msg}`));
+      }
+    };
+
+    bot.on('chat', chatHandler);
+    bot.chat(`/tpa ${playerName}`);
+  });
 }
 
 export async function executeKill(): Promise<void> {
