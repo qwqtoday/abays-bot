@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Login - KitBot</title>
+  <link rel="stylesheet" href="/css/style.css">
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-box">
+      <h1 class="login-title">🎮 KitBot</h1>
+      <div id="error" class="error hidden"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label class="label">Username</label>
+          <input type="text" id="username" class="input" placeholder="Enter username" required>
+        </div>
+        <div class="form-group">
+          <label class="label">Password</label>
+          <input type="password" id="password" class="input" placeholder="Enter password" required>
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%;">
+          <span id="loginText">Login</span>
+          <span id="loginSpinner" class="loading hidden"></span>
+        </button>
+      </form>
+    </div>
+  </div>
+  <script>
+    const form = document.getElementById('loginForm');
+    const errorEl = document.getElementById('error');
+    const loginText = document.getElementById('loginText');
+    const loginSpinner = document.getElementById('loginSpinner');
+
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+      
+      errorEl.classList.add('hidden');
+      loginText.classList.add('hidden');
+      loginSpinner.classList.remove('hidden');
+      
+      try {
+        const response = await fetch('/api/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        
+        const data = await response.json();
+        
+        if (!response.ok) {
+          throw new Error(data.error || 'Login failed');
+        }
+        
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('user', JSON.stringify(data.user));
+        window.location.href = '/';
+      } catch (err) {
+        errorEl.textContent = err.message;
+        errorEl.classList.remove('hidden');
+      } finally {
+        loginText.classList.remove('hidden');
+        loginSpinner.classList.add('hidden');
+      }
+    });
+  </script>
+</body>
+</html>

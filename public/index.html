@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Dashboard - KitBot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="/" class="nav-brand">🎮 KitBot</a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/kits" class="nav-link">Kits</a>
+        <a href="/orders" class="nav-link">Orders</a>
+        <a href="#" class="nav-link" onclick="api.logout(); return false;">Logout</a>
+      </div>
+    </nav>
+
+    <div class="grid grid-3">
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Bot Status</span>
+        </div>
+        <div id="botStatus">
+          <p class="text-muted">Loading...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Queue</span>
+        </div>
+        <div id="queueStatus">
+          <p class="text-muted">Loading...</p>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-header">
+          <span class="card-title">Quick Actions</span>
+        </div>
+        <div class="flex gap-2">
+          <a href="/orders/new" class="btn btn-primary">New Order</a>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Recent Orders</span>
+        <a href="/orders" class="btn btn-secondary btn-sm">View All</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Kit</th>
+            <th>Player</th>
+            <th>Status</th>
+            <th>Created</th>
+          </tr>
+        </thead>
+        <tbody id="recentOrders">
+          <tr><td colspan="5" class="text-muted text-center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadDashboard() {
+      try {
+        const [status, orders] = await Promise.all([
+          api.request('/status'),
+          api.request('/orders')
+        ]);
+
+        const botStatus = document.getElementById('botStatus');
+        botStatus.innerHTML = `
+          <p><strong>Connected:</strong> ${status.bot.connected ? '<span style="color: var(--success)">Yes</span>' : '<span style="color: var(--danger)">No</span>'}</p>
+          <p><strong>Queue:</strong> ${status.queue.waiting} waiting, ${status.queue.active} active</p>
+        `;
+
+        const queueStatus = document.getElementById('queueStatus');
+        queueStatus.innerHTML = `
+          <p><strong>Waiting:</strong> ${status.queue.waiting}</p>
+          <p><strong>Active:</strong> ${status.queue.active}</p>
+          <p><strong>Completed:</strong> ${status.queue.completed}</p>
+          <p><strong>Failed:</strong> ${status.queue.failed}</p>
+        `;
+
+        const recentOrders = document.getElementById('recentOrders');
+        if (orders.length === 0) {
+          recentOrders.innerHTML = '<tr><td colspan="5" class="text-muted text-center">No orders yet</td></tr>';
+        } else {
+          recentOrders.innerHTML = orders.slice(0, 5).map(order => `
+            <tr>
+              <td class="text-sm">${order.id.slice(0, 8)}...</td>
+              <td>${order.kitId ? order.kitId.slice(0, 8) + '...' : '-'}</td>
+              <td>${order.playerName}</td>
+              <td><span class="status status-${order.status}">${utils.formatStatus(order.status)}</span></td>
+              <td class="text-sm">${utils.formatDate(order.createdAt)}</td>
+            </tr>
+          `).join('');
+        }
+      } catch (err) {
+        console.error('Failed to load dashboard:', err);
+      }
+    }
+
+    loadDashboard();
+    setInterval(loadDashboard, 10000);
+  </script>
+</body>
+</html>

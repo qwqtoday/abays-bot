@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Orders - KitBot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="/" class="nav-brand">🎮 KitBot</a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/kits" class="nav-link">Kits</a>
+        <a href="/orders" class="nav-link">Orders</a>
+        <a href="#" class="nav-link" onclick="api.logout(); return false;">Logout</a>
+      </div>
+    </nav>
+
+    <div class="card">
+      <div class="card-header">
+        <span class="card-title">Orders</span>
+        <a href="/orders/new" class="btn btn-primary btn-sm">+ New Order</a>
+      </div>
+      <table>
+        <thead>
+          <tr>
+            <th>ID</th>
+            <th>Kit</th>
+            <th>Player</th>
+            <th>Status</th>
+            <th>Created</th>
+            <th>Completed</th>
+          </tr>
+        </thead>
+        <tbody id="ordersList">
+          <tr><td colspan="6" class="text-muted text-center">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadOrders() {
+      try {
+        const orders = await api.request('/orders');
+        const tbody = document.getElementById('ordersList');
+        
+        if (orders.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" class="text-muted text-center">No orders yet</td></tr>';
+          return;
+        }
+
+        tbody.innerHTML = orders.map(order => `
+          <tr>
+            <td class="text-sm">${escapeHtml(order.id.slice(0, 8))}...</td>
+            <td>${escapeHtml(order.kitName || order.kitId?.slice(0, 8) || '-')}</td>
+            <td>${escapeHtml(order.playerName)}</td>
+            <td><span class="status status-${order.status}">${utils.formatStatus(order.status)}</span></td>
+            <td class="text-sm">${utils.formatDate(order.createdAt)}</td>
+            <td class="text-sm">${order.completedAt ? utils.formatDate(order.completedAt) : '-'}</td>
+          </tr>
+        `).join('');
+      } catch (err) {
+        console.error('Failed to load orders:', err);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    loadOrders();
+    setInterval(loadOrders, 5000);
+  </script>
+</body>
+</html>

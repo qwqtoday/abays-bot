@@ -1,0 +1,167 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>New Order - KitBot</title>
+  <link rel="stylesheet" href="/css/style.css">
+  <script src="/js/app.js"></script>
+</head>
+<body>
+  <div class="container">
+    <nav class="nav">
+      <a href="/" class="nav-brand">🎮 KitBot</a>
+      <div class="nav-links">
+        <a href="/" class="nav-link">Dashboard</a>
+        <a href="/kits" class="nav-link">Kits</a>
+        <a href="/orders" class="nav-link">Orders</a>
+        <a href="#" class="nav-link" onclick="api.logout(); return false;">Logout</a>
+      </div>
+    </nav>
+
+    <div class="card" style="max-width: 500px; margin: 0 auto;">
+      <div class="card-header">
+        <span class="card-title">New Order</span>
+      </div>
+      <div id="error" class="error hidden"></div>
+      <div id="success" class="success hidden"></div>
+      
+      <form id="orderForm">
+        <div class="form-group">
+          <label class="label">Select Kit</label>
+          <select id="kitId" class="input" required>
+            <option value="">Loading kits...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label class="label">Player Name (Minecraft username)</label>
+          <input type="text" id="playerName" class="input" placeholder="Enter player's Minecraft username" required>
+        </div>
+        <div class="form-group">
+          <div id="kitInfo" class="text-muted text-sm hidden">
+            <p><strong>Home:</strong> <span id="kitHome">-</span></p>
+            <p><strong>Chest:</strong> <span id="kitChest">-</span></p>
+          </div>
+        </div>
+        <div class="flex gap-2">
+          <button type="submit" class="btn btn-primary">
+            <span id="submitText">Create Order</span>
+            <span id="submitSpinner" class="loading hidden"></span>
+          </button>
+          <a href="/orders" class="btn btn-secondary">Cancel</a>
+        </div>
+      </form>
+    </div>
+
+    <div id="orderResult" class="card hidden" style="max-width: 500px; margin: 20px auto;">
+      <div class="card-header">
+        <span class="card-title">Order Created</span>
+      </div>
+      <p><strong>Order ID:</strong> <span id="resultOrderId"></span></p>
+      <p><strong>Status:</strong> <span id="resultStatus" class="status status-processing"></span></p>
+      <p class="text-sm text-muted mt-2">The bot will deliver the kit to the player. Check the Orders page for updates.</p>
+      <div class="flex gap-2 mt-4">
+        <a href="/orders" class="btn btn-primary">View Orders</a>
+        <button class="btn btn-secondary" onclick="newOrder()">Create Another</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let kits = [];
+
+    async function loadKits() {
+      try {
+        kits = await api.request('/kits');
+        const select = document.getElementById('kitId');
+        
+        if (kits.length === 0) {
+          select.innerHTML = '<option value="">No kits available</option>';
+          return;
+        }
+
+        select.innerHTML = '<option value="">Select a kit...</option>' +
+          kits.map(kit => `<option value="${kit.id}">${escapeHtml(kit.name)}</option>`).join('');
+      } catch (err) {
+        utils.showError('error', err.message);
+      }
+    }
+
+    function escapeHtml(str) {
+      return String(str).replace(/[&<>"']/g, c => ({
+        '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
+      }[c]));
+    }
+
+    document.getElementById('kitId').addEventListener('change', (e) => {
+      const kitId = e.target.value;
+      const kitInfo = document.getElementById('kitInfo');
+      
+      if (!kitId) {
+        kitInfo.classList.add('hidden');
+        return;
+      }
+
+      const kit = kits.find(k => k.id === kitId);
+      if (kit) {
+        document.getElementById('kitHome').textContent = kit.homeName;
+        document.getElementById('kitChest').textContent = `(${kit.chestX}, ${kit.chestY}, ${kit.chestZ})`;
+        kitInfo.classList.remove('hidden');
+      }
+    });
+
+    document.getElementById('orderForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      utils.hideError('error');
+      utils.hideError('success');
+      
+      const kitId = document.getElementById('kitId').value;
+      const playerName = document.getElementById('playerName').value.trim();
+      
+      if (!kitId) {
+        utils.showError('error', 'Please select a kit');
+        return;
+      }
+
+      if (!playerName) {
+        utils.showError('error', 'Please enter a player name');
+        return;
+      }
+
+      const submitText = document.getElementById('submitText');
+      const submitSpinner = document.getElementById('submitSpinner');
+      submitText.classList.add('hidden');
+      submitSpinner.classList.remove('hidden');
+
+      try {
+        const result = await api.request('/orders', {
+          method: 'POST',
+          body: JSON.stringify({ kitId, playerName })
+        });
+
+        document.getElementById('orderForm').classList.add('hidden');
+        document.getElementById('orderResult').classList.remove('hidden');
+        document.getElementById('resultOrderId').textContent = result.id;
+        document.getElementById('resultStatus').textContent = 'Processing';
+      } catch (err) {
+        utils.showError('error', err.message);
+        submitText.classList.remove('hidden');
+        submitSpinner.classList.add('hidden');
+      }
+    });
+
+    function newOrder() {
+      document.getElementById('orderForm').classList.remove('hidden');
+      document.getElementById('orderResult').classList.add('hidden');
+      document.getElementById('kitId').value = '';
+      document.getElementById('playerName').value = '';
+      document.getElementById('kitInfo').classList.add('hidden');
+      document.getElementById('submitText').classList.remove('hidden');
+      document.getElementById('submitSpinner').classList.add('hidden');
+    }
+
+    loadKits();
+  </script>
+</body>
+</html>
