@@ -38,8 +38,7 @@ export class BotManager extends EventEmitter {
         host: config.mc.host,
         port: config.mc.port,
         username: config.mc.username,
-        password: config.mc.password,
-        auth: config.mc.auth === 'online' ? 'microsoft' : 'offline',
+        auth: config.mc.auth,
       };
 
       const bot = mineflayer.createBot(botOptions) as Bot;

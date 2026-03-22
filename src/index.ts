@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { config } from './config/index.js';
 import { createLogger } from './utils/logger.js';
 import { botManager } from './bot/connection.js';

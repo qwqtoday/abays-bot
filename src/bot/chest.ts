@@ -1,7 +1,9 @@
 import { botManager, Bot } from './connection.js';
 import { createLogger } from '../utils/logger.js';
 import { Vec3 } from 'vec3';
-import { goals } from 'mineflayer-pathfinder';
+import pathfinder from 'mineflayer-pathfinder';
+
+const { goals } = pathfinder;
 
 const log = createLogger('bot:chest');
 

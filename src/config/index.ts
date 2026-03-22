@@ -5,8 +5,7 @@ const configSchema = z.object({
     host: z.string().min(1),
     port: z.number().int().positive().default(25565),
     username: z.string().min(1),
-    password: z.string().optional(),
-    auth: z.enum(['online', 'offline']).default('online'),
+    auth: z.enum(['microsoft', 'offline']).default('offline'),
   }),
   api: z.object({
     port: z.number().int().positive().default(3000),
@@ -33,8 +32,7 @@ function parseEnv(): Config {
       host: process.env.MC_HOST,
       port: parseInt(process.env.MC_PORT || '25565', 10),
       username: process.env.MC_USERNAME,
-      password: process.env.MC_PASSWORD,
-      auth: (process.env.MC_AUTH as 'online' | 'offline') || 'online',
+      auth: (process.env.MC_AUTH as 'microsoft' | 'offline') || 'offline',
     },
     api: {
       port: parseInt(process.env.API_PORT || '3000', 10),
