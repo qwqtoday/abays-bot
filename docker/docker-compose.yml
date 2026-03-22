@@ -5,17 +5,10 @@ services:
       dockerfile: docker/Dockerfile
     container_name: abays-bot
     restart: unless-stopped
+    env_file:
+      - ../.env
     environment:
-      - MC_HOST=${MC_HOST}
-      - MC_PORT=${MC_PORT:-25565}
-      - MC_USERNAME=${MC_USERNAME}
-      - MC_AUTH=${MC_AUTH:-offline}
-      - API_PORT=${API_PORT:-3000}
-      - JWT_SECRET=${JWT_SECRET}
-      - QUEUE_CONCURRENCY=${QUEUE_CONCURRENCY:-3}
-      - TPA_TIMEOUT_MS=${TPA_TIMEOUT_MS:-60000}
       - DATABASE_PATH=/app/data/bot.db
-      - LOG_LEVEL=${LOG_LEVEL:-info}
       - NODE_ENV=production
     volumes:
       - bot-data:/app/data

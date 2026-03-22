@@ -6,6 +6,8 @@ import { EventEmitter } from 'events';
 
 const log = createLogger('bot:connection');
 
+const RECONNECT_DELAY_MS = 5 * 60 * 1000; // 5 minutes
+
 export type Bot = mineflayer.Bot & {
   pathfinder: pathfinder.Pathfinder;
 };
@@ -36,7 +38,6 @@ export class BotManager extends EventEmitter {
 
       const botOptions: mineflayer.BotOptions = {
         host: config.mc.host,
-        port: config.mc.port,
         username: config.mc.username,
         auth: config.mc.auth,
       };
@@ -97,10 +98,9 @@ export class BotManager extends EventEmitter {
     this.isReconnecting = true;
     this.reconnectAttempts++;
 
-    const delay = Math.min(1000 * Math.pow(2, this.reconnectAttempts), 30000);
-    log.info(`Reconnecting in ${delay / 1000}s (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
+    log.info(`Waiting ${RECONNECT_DELAY_MS / 1000}s before reconnecting (attempt ${this.reconnectAttempts}/${this.maxReconnectAttempts})...`);
 
-    await new Promise((r) => setTimeout(r, delay));
+    await new Promise((r) => setTimeout(r, RECONNECT_DELAY_MS));
 
     try {
       await this.connect();
