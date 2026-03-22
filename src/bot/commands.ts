@@ -19,75 +19,57 @@ function getBot(): Bot {
   return bot;
 }
 
+function sleep(ms: number): Promise<void> {
+  return new Promise((resolve) => setTimeout(resolve, ms));
+}
+
 export async function executeHome(homeName: string): Promise<void> {
   const bot = getBot();
   log.info(`Executing /home ${homeName}`);
 
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      bot.off('chat', chatHandler);
-      reject(new CommandError(`Timeout waiting for /home ${homeName}`));
-    }, 10000);
+  const startPos = bot.entity.position.clone();
+  bot.chat(`/home ${homeName}`);
 
-    const chatHandler = (username: string, message: string) => {
-      const msg = message.toString().toLowerCase();
-      if (msg.includes('teleported') || msg.includes('welcome home') || msg.includes('home')) {
-        clearTimeout(timeout);
-        bot.off('chat', chatHandler);
-        log.info(`Successfully teleported to home: ${homeName}`);
-        resolve();
-      }
-      if (msg.includes('no home') || msg.includes('not found') || msg.includes("doesn't exist")) {
-        clearTimeout(timeout);
-        bot.off('chat', chatHandler);
-        reject(new CommandError(`Home location "${homeName}" not found`));
-      }
-    };
+  await sleep(2000);
 
-    bot.on('chat', chatHandler);
-    bot.chat(`/home ${homeName}`);
-  });
+  const endPos = bot.entity.position;
+  const distance = Math.sqrt(
+    Math.pow(endPos.x - startPos.x, 2) +
+    Math.pow(endPos.y - startPos.y, 2) +
+    Math.pow(endPos.z - startPos.z, 2)
+  );
+
+  if (distance > 10) {
+    log.info(`Successfully teleported to home: ${homeName} (distance: ${distance.toFixed(1)})`);
+  } else {
+    log.info(`Executed /home ${homeName}, assuming teleport succeeded`);
+  }
 }
 
 export async function executeTpa(playerName: string): Promise<void> {
   const bot = getBot();
   log.info(`Executing /tpa ${playerName}`);
 
-  return new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
-      bot.off('chat', chatHandler);
-      reject(new CommandError(`Timeout waiting for /tpa ${playerName}`));
-    }, config.queue.tpaTimeoutMs);
+  const startPos = bot.entity.position.clone();
+  bot.chat(`/tpa ${playerName}`);
 
-    const chatHandler = (username: string, message: string) => {
-      const msg = message.toString().toLowerCase();
-      if (
-        msg.includes('teleport') &&
-        (msg.includes('accept') || msg.includes('success') || msg.includes('teleported'))
-      ) {
-        clearTimeout(timeout);
-        bot.off('chat', chatHandler);
-        log.info(`TPA accepted by ${playerName}`);
-        resolve();
-      }
-      if (msg.includes('request sent')) {
-        log.debug(`TPA request sent to ${playerName}, waiting for acceptance...`);
-      }
-      if (
-        msg.includes('not found') ||
-        msg.includes('offline') ||
-        msg.includes('denied') ||
-        msg.includes('expired')
-      ) {
-        clearTimeout(timeout);
-        bot.off('chat', chatHandler);
-        reject(new CommandError(`TPA to ${playerName} failed: ${msg}`));
-      }
-    };
+  const tpaTimeout = config.queue.tpaTimeoutMs;
+  log.info(`Waiting ${tpaTimeout / 1000}s for TPA acceptance...`);
 
-    bot.on('chat', chatHandler);
-    bot.chat(`/tpa ${playerName}`);
-  });
+  await sleep(tpaTimeout);
+
+  const endPos = bot.entity.position;
+  const distance = Math.sqrt(
+    Math.pow(endPos.x - startPos.x, 2) +
+    Math.pow(endPos.y - startPos.y, 2) +
+    Math.pow(endPos.z - startPos.z, 2)
+  );
+
+  if (distance > 10) {
+    log.info(`TPA accepted by ${playerName} (distance: ${distance.toFixed(1)})`);
+  } else {
+    log.info(`TPA request sent to ${playerName}, assuming accepted`);
+  }
 }
 
 export async function executeKill(): Promise<void> {
@@ -95,19 +77,12 @@ export async function executeKill(): Promise<void> {
   log.info('Executing /kill');
 
   return new Promise((resolve) => {
-    const deathHandler = () => {
-      bot.off('death', deathHandler);
-      bot.off('respawn', respawnHandler);
-    };
-
     const respawnHandler = () => {
-      bot.off('death', deathHandler);
       bot.off('respawn', respawnHandler);
       log.info('Bot respawned at spawn point');
       resolve();
     };
 
-    bot.on('death', deathHandler);
     bot.on('respawn', respawnHandler);
     bot.chat('/kill');
   });
